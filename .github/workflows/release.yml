@@ -53,6 +53,7 @@ jobs:
             /p:AppxPackageDir="$env:GITHUB_WORKSPACE\AppPackages\" `
             /p:AppxBundle=Never `
             /p:UapAppxPackageBuildMode=SideloadOnly `
+            /p:GenerateAppxPackageOnBuild=true `
             /p:AppxPackageSigningEnabled=true `
             /p:PackageCertificateKeyFile="$env:GITHUB_WORKSPACE\melodia.pfx" `
             /p:PackageCertificatePassword="melodia"
