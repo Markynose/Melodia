@@ -11,6 +11,6 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         RootFrame.Navigate(typeof(MainPage));
-        AppWindow.Resize(new SizeInt32(1100, 640));
+        AppWindow.Resize(new SizeInt32(1100, 900));
     }
 }

@@ -438,6 +438,16 @@ public class MainViewModel : INotifyPropertyChanged
         PlaySong((_currentIndex + 1) % Playlist.Count);
     }
 
+    // Called after playlist drag-reorder to keep _currentIndex in sync
+    public void ResyncCurrentIndex()
+    {
+        if (_currentSong == null) return;
+        var idx = Playlist.IndexOf(_currentSong);
+        if (idx < 0 || idx == _currentIndex) return;
+        _currentIndex = idx;
+        CurrentIndex  = idx;
+    }
+
     public void ToggleShuffle() => IsShuffled = !_isShuffled;
 
     public void CycleRepeat() => RepeatMode = _repeatMode switch

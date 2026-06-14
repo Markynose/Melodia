@@ -10,23 +10,27 @@
     mc:Ignorable="d"
     Background="Transparent">
 
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Space" Invoked="KeyShortcut_PlayPause" />
+        <KeyboardAccelerator Key="Right" Modifiers="Control" Invoked="KeyShortcut_Next" />
+        <KeyboardAccelerator Key="Left"  Modifiers="Control" Invoked="KeyShortcut_Previous" />
+    </Page.KeyboardAccelerators>
+
     <Page.Resources>
-        <helpers:SecondsToTimeConverter   x:Key="SecondsToTime" />
-        <helpers:BoolToOpacityConverter   x:Key="LyricOpacity" />
-        <helpers:BoolToFontWeightConverter x:Key="LyricWeight" />
+        <helpers:SecondsToTimeConverter x:Key="SecondsToTime" />
     </Page.Resources>
 
-    <Grid AllowDrop="True" DragOver="Grid_DragOver" Drop="Grid_Drop">
+    <Grid x:Name="RootGrid" AllowDrop="True" DragOver="Grid_DragOver" Drop="Grid_Drop">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" MinWidth="160" />
-            <ColumnDefinition Width="1" />
-            <ColumnDefinition Width="*"   MinWidth="380" />
-            <ColumnDefinition Width="1" />
-            <ColumnDefinition Width="240" MinWidth="180" />
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="*"   MinWidth="280" />
+            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="240" />
         </Grid.ColumnDefinitions>
 
         <!-- ═══ LEFT: Library ════════════════════════════════════════════════ -->
-        <Grid Grid.Column="0">
+        <Grid x:Name="LibraryPanel" Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -113,8 +117,16 @@
         </Grid>
 
         <!-- Divider -->
-        <Rectangle Grid.Column="1"
-                   Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Grid x:Name="LeftDivider" Grid.Column="1"
+              Background="Transparent"
+              PointerEntered="Divider_PointerEntered"
+              PointerExited="Divider_PointerExited"
+              PointerPressed="LeftDivider_PointerPressed"
+              PointerMoved="LeftDivider_PointerMoved"
+              PointerReleased="Divider_PointerReleased">
+            <Rectangle Width="1" HorizontalAlignment="Center"
+                       Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        </Grid>
 
         <!-- ═══ MIDDLE: Now playing ══════════════════════════════════════════ -->
         <ScrollViewer x:Name="NowPlayingScroller"
@@ -282,45 +294,108 @@
                                CharacterSpacing="100"
                                Margin="0,0,0,12" />
 
-                    <ListView x:Name="LyricsListView"
-                              ItemsSource="{x:Bind ViewModel.Lyrics, Mode=OneWay}"
-                              SelectionMode="None"
-                              IsItemClickEnabled="True"
-                              ItemClick="LyricLine_Click"
-                              MaxHeight="280"
-                              ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                              ScrollViewer.IsVerticalScrollChainingEnabled="False">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                <Setter Property="Padding"   Value="8,5" />
-                                <Setter Property="MinHeight" Value="0" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="models:LyricLine">
-                                <TextBlock Text="{x:Bind Text}"
-                                           HorizontalAlignment="Center"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap"
-                                           FontSize="15"
-                                           FontWeight="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource LyricWeight}}"
-                                           Opacity="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource LyricOpacity}}" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                    <Grid>
+                        <ListView x:Name="LyricsListView"
+                                  ItemsSource="{x:Bind ViewModel.Lyrics, Mode=OneWay}"
+                                  SelectionMode="None"
+                                  IsItemClickEnabled="True"
+                                  ItemClick="LyricLine_Click"
+                                  ContainerContentChanging="LyricsListView_ContainerContentChanging"
+                                  MaxHeight="280"
+                                  ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                  ScrollViewer.IsVerticalScrollChainingEnabled="False">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                    <Setter Property="Padding"   Value="8,6" />
+                                    <Setter Property="MinHeight" Value="0" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:LyricLine">
+                                    <TextBlock Text="{x:Bind Text}"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               FontSize="15"
+                                               Opacity="0.4"
+                                               RenderTransformOrigin="0.5,0.5">
+                                        <TextBlock.RenderTransform>
+                                            <ScaleTransform ScaleX="0.85" ScaleY="0.85" />
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <Button x:Name="SnapToCurrentButton"
+                                Visibility="Collapsed"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,0,8"
+                                Width="32" Height="32"
+                                Padding="0"
+                                CornerRadius="16"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="SnapToCurrent_Click"
+                                ToolTipService.ToolTip="Jump to current lyric">
+                            <FontIcon Glyph="&#xE8B4;"
+                                      FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                      FontSize="13" />
+                        </Button>
+                    </Grid>
                 </StackPanel>
 
             </StackPanel>
             </Grid>
         </ScrollViewer>
 
+        <!-- View layout button — overlaid in center column, top-right corner -->
+        <Button Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Width="32" Height="32"
+                Margin="0,4,4,0"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                ToolTipService.ToolTip="View options">
+            <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                    <ToggleMenuFlyoutItem x:Name="LibraryToggle"
+                                         Text="Library"
+                                         IsChecked="True"
+                                         Click="ToggleLibrary_Click" />
+                    <ToggleMenuFlyoutItem x:Name="PlaylistToggle"
+                                         Text="Playlist"
+                                         IsChecked="True"
+                                         Click="TogglePlaylist_Click" />
+                    <MenuFlyoutSeparator />
+                    <ToggleMenuFlyoutItem x:Name="SwapToggle"
+                                         Text="Swap panels"
+                                         IsChecked="False"
+                                         Click="SwapPanels_Click" />
+                </MenuFlyout>
+            </Button.Flyout>
+            <FontIcon Glyph="&#xE8A9;"
+                      FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                      FontSize="14" />
+        </Button>
+
         <!-- Divider -->
-        <Rectangle Grid.Column="3"
-                   Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Grid x:Name="RightDivider" Grid.Column="3"
+              Background="Transparent"
+              PointerEntered="Divider_PointerEntered"
+              PointerExited="Divider_PointerExited"
+              PointerPressed="RightDivider_PointerPressed"
+              PointerMoved="RightDivider_PointerMoved"
+              PointerReleased="Divider_PointerReleased">
+            <Rectangle Width="1" HorizontalAlignment="Center"
+                       Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        </Grid>
 
         <!-- ═══ RIGHT: Playlist ═════════════════════════════════════════════ -->
-        <Grid Grid.Column="4">
+        <Grid x:Name="PlaylistPanel" Grid.Column="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -359,7 +434,11 @@
                       ItemsSource="{x:Bind ViewModel.Playlist}"
                       SelectionChanged="PlaylistView_SelectionChanged"
                       RightTapped="PlaylistView_RightTapped"
+                      DragItemsCompleted="PlaylistView_DragItemsCompleted"
                       SelectionMode="Single"
+                      CanReorderItems="True"
+                      CanDragItems="True"
+                      AllowDrop="True"
                       Padding="0,0,0,12">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:SongItem">
