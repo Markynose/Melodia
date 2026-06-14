@@ -57,6 +57,10 @@ jobs:
             /p:PackageCertificateKeyFile="$env:GITHUB_WORKSPACE\melodia.pfx" `
             /p:PackageCertificatePassword="melodia"
 
+      - name: List build output
+        shell: pwsh
+        run: Get-ChildItem -Recurse -Include "*.msix","*.msixbundle","*.appx","*.appxbundle" | Select-Object FullName
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
