@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Melodia (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Melodia (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
