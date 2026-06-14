@@ -57,13 +57,6 @@ jobs:
             /p:PackageCertificateKeyFile="$env:GITHUB_WORKSPACE\melodia.pfx" `
             /p:PackageCertificatePassword="melodia"
 
-      - name: Find MSIX
-        shell: pwsh
-        run: |
-          $msix = Get-ChildItem -Recurse -Filter "*.msix" | Select-Object -First 1
-          echo "MSIX_PATH=$($msix.FullName)" >> $env:GITHUB_ENV
-          echo "MSIX_NAME=$($msix.Name)" >> $env:GITHUB_ENV
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -78,7 +71,7 @@ jobs:
 
             > requires windows 10 1803 or later
           files: |
-            ${{ env.MSIX_PATH }}
+            AppPackages/**/*.msix
             melodia.cer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
