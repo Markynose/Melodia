@@ -28,6 +28,9 @@ public sealed partial class MainPage : Page
     private int _previousLyricIndex = -1;
     private bool _userScrolledLyrics;
 
+    private enum LibraryMode { Songs, Albums, AlbumDetail }
+    private LibraryMode _libraryMode = LibraryMode.Songs;
+
     private bool _libraryVisible = true;
     private bool _playlistVisible = true;
     private bool _panelsSwapped;
@@ -45,6 +48,8 @@ public sealed partial class MainPage : Page
 
         LyricsListView.AddHandler(UIElement.PointerWheelChangedEvent,
             new PointerEventHandler(LyricsListView_PointerWheelChanged), true);
+
+        SetLibraryMode(LibraryMode.Albums);
 
         ViewModel.PropertyChanged += (_, e) =>
         {
@@ -199,6 +204,80 @@ public sealed partial class MainPage : Page
         return null;
     }
 
+    // ── Library view toggle ───────────────────────────────────────────────────
+    private void SongsView_Click(object sender, RoutedEventArgs e)  => SetLibraryMode(LibraryMode.Songs);
+    private void AlbumsView_Click(object sender, RoutedEventArgs e) => SetLibraryMode(LibraryMode.Albums);
+    private void AlbumBack_Click(object sender, RoutedEventArgs e)  => SetLibraryMode(LibraryMode.Albums);
+
+    private void SetLibraryMode(LibraryMode mode)
+    {
+        _libraryMode = mode;
+
+        SongListView.Visibility        = mode == LibraryMode.Songs       ? Visibility.Visible : Visibility.Collapsed;
+        AlbumsListView.Visibility      = mode == LibraryMode.Albums      ? Visibility.Visible : Visibility.Collapsed;
+        AlbumDetailListView.Visibility = mode == LibraryMode.AlbumDetail ? Visibility.Visible : Visibility.Collapsed;
+
+        SongsModeHeader.Visibility   = mode == LibraryMode.Songs       ? Visibility.Visible : Visibility.Collapsed;
+        AlbumsModeHeader.Visibility  = mode == LibraryMode.Albums      ? Visibility.Visible : Visibility.Collapsed;
+        AlbumDetailHeader.Visibility = mode == LibraryMode.AlbumDetail ? Visibility.Visible : Visibility.Collapsed;
+
+        SearchBox.Visibility = mode == LibraryMode.Songs ? Visibility.Visible : Visibility.Collapsed;
+        if (mode != LibraryMode.Songs) ViewModel.FilterText = string.Empty;
+
+        var accent = (Style)Application.Current.Resources["AccentButtonStyle"];
+        SongsViewBtn.Style  = mode == LibraryMode.Songs  ? accent : null;
+        AlbumsViewBtn.Style = mode != LibraryMode.Songs  ? accent : null;
+    }
+
+    private void AlbumsListView_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        var album = FindAlbumItem(e.OriginalSource);
+        if (album == null) return;
+        AlbumDetailListView.ItemsSource = album.Songs;
+        AlbumDetailTitle.Text = album.Name;
+        SetLibraryMode(LibraryMode.AlbumDetail);
+    }
+
+    private void AlbumsListView_RightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        var album = FindAlbumItem(e.OriginalSource);
+        if (album == null) return;
+
+        var menu = new MenuFlyout();
+
+        var play = new MenuFlyoutItem { Text = "Play album", Icon = new SymbolIcon(Symbol.Play) };
+        play.Click += (_, _) => ViewModel.PlayAlbum(album);
+
+        var add = new MenuFlyoutItem { Text = "Add to playlist", Icon = new SymbolIcon(Symbol.Add) };
+        add.Click += (_, _) => ViewModel.AddAlbumToPlaylist(album);
+
+        var next = new MenuFlyoutItem { Text = "Play next" };
+        next.Click += (_, _) => ViewModel.PlayAlbumNext(album);
+
+        menu.Items.Add(play);
+        menu.Items.Add(add);
+        menu.Items.Add(next);
+
+        menu.ShowAt((UIElement)sender, e.GetPosition((UIElement)sender));
+    }
+
+    private void AlbumDetailListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        var song = FindSongItem(e.OriginalSource);
+        if (song != null) ViewModel.PlayFromLibrary(song);
+    }
+
+    private static AlbumItem? FindAlbumItem(object originalSource)
+    {
+        var element = originalSource as DependencyObject;
+        while (element != null)
+        {
+            if (element is ListViewItem lvi && lvi.Content is AlbumItem album) return album;
+            element = VisualTreeHelper.GetParent(element);
+        }
+        return null;
+    }
+
     // ── Library (left panel) ──────────────────────────────────────────────────
     private async void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -240,6 +319,16 @@ public sealed partial class MainPage : Page
         var next = new MenuFlyoutItem { Text = "Play next" };
         next.Click += (_, _) => ViewModel.PlayNext(song);
 
+        var fav = new MenuFlyoutItem
+        {
+            Text = song.IsFavorite ? "Remove from favorites" : "Add to favorites",
+            Icon = new SymbolIcon((Symbol)0xE735),
+        };
+        fav.Click += (_, _) => ViewModel.ToggleFavorite(song);
+
+        var editNote = new MenuFlyoutItem { Text = "Edit note", Icon = new SymbolIcon(Symbol.Edit) };
+        editNote.Click += async (_, _) => await EditNoteAsync(song);
+
         var open = new MenuFlyoutItem { Text = "Open file location" };
         open.Click += async (_, _) => await OpenFileLocationAsync(song);
 
@@ -247,6 +336,8 @@ public sealed partial class MainPage : Page
         menu.Items.Add(add);
         menu.Items.Add(next);
         menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(fav);
+        menu.Items.Add(editNote);
         menu.Items.Add(open);
 
         menu.ShowAt((UIElement)sender, e.GetPosition((UIElement)sender));
@@ -485,6 +576,96 @@ public sealed partial class MainPage : Page
             .ToList();
         if (files.Count > 0)
             await ViewModel.LoadFilesAsync(files);
+    }
+
+    // ── Favorites filter ─────────────────────────────────────────────────────
+    private void FavoritesFilter_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FavoritesOnly = !ViewModel.FavoritesOnly;
+        FavoritesFilterBtn.Opacity = ViewModel.FavoritesOnly ? 1.0 : 0.35;
+    }
+
+    // ── Last.fm settings ─────────────────────────────────────────────────────
+    private async void LastFmSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var statusText = new TextBlock
+        {
+            Text   = ViewModel.LastFmStatus,
+            Margin = new Microsoft.UI.Xaml.Thickness(0, 0, 0, 16),
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+        };
+        var apiKeyBox    = new TextBox    { PlaceholderText = "API Key",    Text = ViewModel.LastFmApiKey, Width = 360 };
+        var apiSecretBox = new PasswordBox { PlaceholderText = "API Secret", Width = 360 };
+        var usernameBox  = new TextBox    { PlaceholderText = "Username",   Text = ViewModel.LastFmUsername, Width = 360 };
+        var passwordBox  = new PasswordBox { PlaceholderText = "Password",   Width = 360 };
+
+        var panel = new StackPanel { Spacing = 8 };
+        panel.Children.Add(statusText);
+        panel.Children.Add(new TextBlock { Text = "API Key" });
+        panel.Children.Add(apiKeyBox);
+        panel.Children.Add(new TextBlock { Text = "API Secret" });
+        panel.Children.Add(apiSecretBox);
+        panel.Children.Add(new TextBlock { Text = "Username" });
+        panel.Children.Add(usernameBox);
+        panel.Children.Add(new TextBlock { Text = "Password" });
+        panel.Children.Add(passwordBox);
+
+        var dialog = new ContentDialog
+        {
+            Title               = "Last.fm",
+            Content             = panel,
+            PrimaryButtonText   = "Connect",
+            SecondaryButtonText = "Disconnect",
+            CloseButtonText     = "Cancel",
+            XamlRoot            = XamlRoot,
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            var ok = await ViewModel.ConnectLastFmAsync(
+                usernameBox.Text, passwordBox.Password,
+                apiKeyBox.Text, apiSecretBox.Password);
+            if (!ok)
+            {
+                var err = new ContentDialog
+                {
+                    Title           = "Last.fm",
+                    Content         = "Could not connect. Check your credentials and API key.",
+                    CloseButtonText = "OK",
+                    XamlRoot        = XamlRoot,
+                };
+                await err.ShowAsync();
+            }
+        }
+        else if (result == ContentDialogResult.Secondary)
+        {
+            ViewModel.DisconnectLastFm();
+        }
+    }
+
+    // ── Notes ─────────────────────────────────────────────────────────────────
+    private async Task EditNoteAsync(SongItem song)
+    {
+        var box = new TextBox
+        {
+            Text            = ViewModel.GetNote(song),
+            PlaceholderText = "Write a note…",
+            AcceptsReturn   = true,
+            TextWrapping    = TextWrapping.Wrap,
+            MinHeight       = 120,
+            MaxWidth        = 400,
+        };
+        var dialog = new ContentDialog
+        {
+            Title             = song.DisplayTitle,
+            Content           = box,
+            PrimaryButtonText = "Save",
+            CloseButtonText   = "Cancel",
+            XamlRoot          = XamlRoot,
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            ViewModel.SaveNote(song, box.Text);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

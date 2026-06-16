@@ -38,48 +38,99 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Button Grid.Row="0" Click="OpenFolder_Click"
-                    HorizontalAlignment="Stretch"
-                    Margin="8,10,8,4">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xED43;"
-                              FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                              FontSize="16" />
-                    <TextBlock Text="Open Folder" />
-                </StackPanel>
-            </Button>
+            <!-- Open Folder + Songs/Albums toggle -->
+            <Grid Grid.Row="0" Margin="8,10,8,4" ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Click="OpenFolder_Click" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xED43;"
+                                  FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                  FontSize="16" />
+                        <TextBlock Text="Open Folder" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="SongsViewBtn" Grid.Column="1"
+                        Content="Songs" Click="SongsView_Click"
+                        FontSize="12" Padding="8,6"
+                        Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="AlbumsViewBtn" Grid.Column="2"
+                        Content="Albums" Click="AlbumsView_Click"
+                        FontSize="12" Padding="8,6" />
+            </Grid>
 
+            <!-- Search (hidden in album detail) -->
             <TextBox Grid.Row="1"
                      x:Name="SearchBox"
                      PlaceholderText="Search…"
                      Text="{x:Bind ViewModel.FilterText, Mode=TwoWay}"
                      Margin="8,0,8,4" />
 
-            <Grid Grid.Row="2" Margin="8,2,8,4">
+            <!-- Context headers — only one visible at a time -->
+            <Grid Grid.Row="2" x:Name="SongsModeHeader" Margin="8,2,8,4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
                 <TextBlock Text="{x:Bind ViewModel.SongCountText, Mode=OneWay}"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            VerticalAlignment="Center" />
-
-                <ComboBox Grid.Column="1"
+                <Button x:Name="FavoritesFilterBtn" Grid.Column="1"
+                        Click="FavoritesFilter_Click"
+                        Width="24" Height="24" Padding="0" Margin="0,0,4,0"
+                        Opacity="0.35"
+                        ToolTipService.ToolTip="Show favorites only">
+                    <FontIcon Glyph="&#xE735;"
+                              FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                              FontSize="12" />
+                </Button>
+                <ComboBox Grid.Column="2"
                           x:Name="SortComboBox"
                           SelectionChanged="Sort_SelectionChanged"
-                          MinWidth="80"
-                          FontSize="11"
-                          Padding="6,3,24,3">
+                          MinWidth="80" FontSize="11" Padding="6,3,24,3">
                     <ComboBoxItem Content="Default" IsSelected="True" />
                     <ComboBoxItem Content="Title" />
                     <ComboBoxItem Content="Artist" />
                     <ComboBoxItem Content="Album" />
                     <ComboBoxItem Content="Duration" />
+                    <ComboBoxItem Content="Plays" />
                 </ComboBox>
             </Grid>
 
+            <TextBlock Grid.Row="2" x:Name="AlbumsModeHeader"
+                       Visibility="Collapsed"
+                       Text="{x:Bind ViewModel.AlbumCountText, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Margin="12,4,8,4"
+                       VerticalAlignment="Center" />
+
+            <Grid Grid.Row="2" x:Name="AlbumDetailHeader"
+                  Visibility="Collapsed"
+                  Margin="8,2,8,4" ColumnSpacing="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Click="AlbumBack_Click"
+                        Width="28" Height="28" Padding="0">
+                    <FontIcon Glyph="&#xE76B;"
+                              FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                              FontSize="12" />
+                </Button>
+                <TextBlock Grid.Column="1" x:Name="AlbumDetailTitle"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1" />
+            </Grid>
+
+            <!-- Content views -->
             <ListView Grid.Row="3"
                       x:Name="SongListView"
                       ItemsSource="{x:Bind ViewModel.FilteredSongs, Mode=OneWay}"
@@ -93,27 +144,146 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="14" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Spacing="1">
                                 <TextBlock Text="{x:Bind DisplayTitle}"
                                            TextTrimming="CharacterEllipsis"
-                                           MaxLines="1"
-                                           FontSize="13" />
+                                           MaxLines="1" FontSize="13" />
                                 <TextBlock Text="{x:Bind DisplayArtist}"
                                            Style="{StaticResource CaptionTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis"
                                            MaxLines="1" />
+                                <TextBlock Text="{x:Bind DiscBadgeText}"
+                                           Visibility="{x:Bind DiscBadgeVisibility}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="10" />
                             </StackPanel>
                             <TextBlock Grid.Column="1"
                                        Text="{x:Bind DurationString}"
                                        Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        VerticalAlignment="Center" />
+                            <FontIcon Grid.Column="2"
+                                      Glyph="&#xE735;"
+                                      FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                      FontSize="10"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                      Visibility="{x:Bind FavoriteVisibility, Mode=OneWay}"
+                                      VerticalAlignment="Center" />
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+
+            <ListView Grid.Row="3"
+                      x:Name="AlbumsListView"
+                      Visibility="Collapsed"
+                      ItemsSource="{x:Bind ViewModel.Albums}"
+                      Tapped="AlbumsListView_Tapped"
+                      RightTapped="AlbumsListView_RightTapped"
+                      SelectionMode="Single"
+                      Padding="0,0,0,12">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:AlbumItem">
+                        <Grid ColumnSpacing="10" Padding="4,4,8,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="48" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="6"
+                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <FontIcon Glyph="&#xE8D6;"
+                                              FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                              FontSize="20"
+                                              Foreground="{ThemeResource TextFillColorDisabledBrush}"
+                                              Visibility="{x:Bind PlaceholderVisibility, Mode=OneWay}" />
+                                    <Image Source="{x:Bind Art, Mode=OneWay}"
+                                           Stretch="UniformToFill"
+                                           Visibility="{x:Bind ArtVisibility, Mode=OneWay}" />
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" FontSize="13" />
+                                <TextBlock Text="{x:Bind Artist}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ListView Grid.Row="3"
+                      x:Name="AlbumDetailListView"
+                      Visibility="Collapsed"
+                      DoubleTapped="AlbumDetailListView_DoubleTapped"
+                      RightTapped="SongListView_RightTapped"
+                      SelectionMode="Single"
+                      Padding="0,0,0,12">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:SongItem">
+                        <Grid Padding="4,5,8,5" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="14" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="1">
+                                <TextBlock Text="{x:Bind DisplayTitle}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" FontSize="13" />
+                                <TextBlock Text="{x:Bind DisplayArtist}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" />
+                                <TextBlock Text="{x:Bind DiscBadgeText}"
+                                           Visibility="{x:Bind DiscBadgeVisibility}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           FontSize="10" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind DurationString}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <FontIcon Grid.Column="2"
+                                      Glyph="&#xE735;"
+                                      FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                      FontSize="10"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                      Visibility="{x:Bind FavoriteVisibility, Mode=OneWay}"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <!-- Library loading indicator -->
+            <Grid Grid.Row="3"
+                  Visibility="{x:Bind ViewModel.LibraryLoadingVisibility, Mode=OneWay}"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center">
+                <StackPanel Spacing="10" HorizontalAlignment="Center" Margin="0,32,0,0">
+                    <ProgressRing IsActive="True"
+                                  Width="28" Height="28"
+                                  HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Bind ViewModel.LibraryLoadingLabel, Mode=OneWay}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Grid>
         </Grid>
 
         <!-- Divider -->
@@ -179,6 +349,22 @@
                            TextTrimming="CharacterEllipsis"
                            MaxLines="1"
                            Margin="0,4,0,0" />
+
+                <!-- Play count -->
+                <TextBlock Text="{x:Bind ViewModel.NowPlayingPlays, Mode=OneWay}"
+                           Visibility="{x:Bind ViewModel.NowPlayingPlaysVisibility, Mode=OneWay}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0" />
+
+                <!-- Audio format (bitrate / sample rate) -->
+                <TextBlock Text="{x:Bind ViewModel.NowPlayingFormat, Mode=OneWay}"
+                           Visibility="{x:Bind ViewModel.NowPlayingFormatVisibility, Mode=OneWay}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0" />
 
                 <!-- Seek bar -->
                 <Grid Margin="0,24,0,0">
@@ -284,7 +470,7 @@
                 </Grid>
 
                 <!-- ── Lyrics ─────────────────────────────────────────────── -->
-                <StackPanel Visibility="{x:Bind ViewModel.LyricsVisibility, Mode=OneWay}"
+                <StackPanel Visibility="{x:Bind ViewModel.LyricsSectionVisibility, Mode=OneWay}"
                             Margin="0,32,0,0">
 
                     <TextBlock Text="LYRICS"
@@ -294,7 +480,20 @@
                                CharacterSpacing="100"
                                Margin="0,0,0,12" />
 
-                    <Grid>
+                    <!-- Loading indicator -->
+                    <StackPanel Visibility="{x:Bind ViewModel.LyricsLoadingVisibility, Mode=OneWay}"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Spacing="8"
+                                Margin="0,8,0,8">
+                        <ProgressRing IsActive="True" Width="16" Height="16" />
+                        <TextBlock Text="Loading lyrics…"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Grid Visibility="{x:Bind ViewModel.LyricsVisibility, Mode=OneWay}">
                         <ListView x:Name="LyricsListView"
                                   ItemsSource="{x:Bind ViewModel.Lyrics, Mode=OneWay}"
                                   SelectionMode="None"
@@ -375,6 +574,8 @@
                                          Text="Swap panels"
                                          IsChecked="False"
                                          Click="SwapPanels_Click" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="Last.fm settings…" Click="LastFmSettings_Click" />
                 </MenuFlyout>
             </Button.Flyout>
             <FontIcon Glyph="&#xE8A9;"

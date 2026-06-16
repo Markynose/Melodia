@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Melodia interlude">
+    Title="Melodia refrain">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -38,11 +38,11 @@
                     VerticalAlignment="Center">
                 <Button.Flyout>
                     <Flyout Placement="Bottom">
-                        <TextBlock Text="version 0.2.0 aka interlude"
+                        <TextBlock Text="version 0.3.0 aka refrain"
                                    Style="{StaticResource CaptionTextBlockStyle}" />
                     </Flyout>
                 </Button.Flyout>
-                <TextBlock Text="interlude"
+                <TextBlock Text="refrain"
                            FontSize="11"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                            VerticalAlignment="Center" />
