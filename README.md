@@ -2,13 +2,20 @@
 
 a native windows music player built with winui 3 and fluent design. no electron, no web views — just the windows app sdk doing its thing.
 
-**version:** 0.2.0 interlude
+**version:** 0.3.0 refrain
 
 ## features
 
 - three-panel layout — library, now playing, playlist
+- browse by songs or albums — albums view drills into tracklists, right-click to play/queue a whole album
 - panels are resizable via draggable dividers; hide or swap them from the view menu
 - synced lyrics with animated transitions — current line scales up and fades in, others dim
+- favorites — star songs, filter the library to favorites only
+- play counts, shown in now playing
+- last.fm scrobbling — now playing updates and scrobbles once a track passes the listen threshold
+- per-song notes, stored locally
+- folder watch — library auto-reloads when files change on disk
+- now playing shows the audio format (bitrate / sample rate)
 - search, sort, shuffle, repeat
 - playlist reordering via drag and drop
 - keyboard shortcuts — space to play/pause, ctrl+left/right to skip
